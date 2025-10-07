@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jogo da Velha</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="service" href="service-worker.js">
+  <style>
+    /* Reset básico */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: url("https://static.vecteezy.com/ti/vetor-gratis/p1/4532221-ilustracao-em-tic-tac-toe-seamless-background-on-dark-blue-vector-illustration-vetor.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+    .game-container {
+      background: rgba(255,255,255,0.95);
+      padding: 20px;
+      border-radius: 10px;
+      width: 350px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #2c3e50;
+    }
+    .placar {
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: #34495e;
+    }
+    .tabuleiro {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tabuleiro div {
+      width: 80px;
+      height: 80px;
+      background: #ecf0f1;
+      font-size: 36px;
+      font-weight: bold;
+      border: 2px solid #bdc3c7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.3s;
+      user-select: none;
+    }
+    .tabuleiro div:hover {
+      background-color: #dfe6e9;
+    }
+    .mensagem {
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: #2c3e50;
+      min-height: 24px;
+      font-weight: bold;
+    }
+    .btn-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    .btn:hover:not(:disabled) {
+      background: #2980b9;
+    }
+    .btn-danger {
+      background: #e74c3c;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: #c0392b;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Animações */
+    @keyframes fadeIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .move-animation {
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes pulseVerde {
+      0%, 100% {
+        background-color: rgba(46, 204, 113, 0.4);
+      }
+      50% {
+        background-color: rgba(46, 204, 113, 0.8);
+      }
+    }
+    .winning-line {
+      animation: pulseVerde 1s infinite;
+      background-color: rgba(46, 204, 113, 0.4) !important;
+      /* não altera a cor do texto */
+    }
+
+    @keyframes drawAnimation {
+      0%, 100% { background-color: #bdc3c7; }
+      50% { background-color: #ecf0f1; }
+    }
+    .draw-animation {
+      animation: drawAnimation 1.5s ease-in-out infinite;
+    }
+
+    /* Mensagem de vencedor e empate */
+    .vencedor {
+      color: #27ae60;
+    }
+    .empate {
+      color: #e67e22;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Jogo da Velha🧑‍🦳</h1>
+    <div class="placar">
+      Jogador X: <span id="pontosX">0</span> | Jogador O: <span id="pontosO">0</span> | Empates: <span id="pontosEmpate">0</span>
+    </div>
+    <div class="mensagem" id="mensagem">É a vez do jogador X</div>
+    <div class="tabuleiro" id="tabuleiro">
+      <div onclick="mover(0)"></div>
+      <div onclick="mover(1)"></div>
+      <div onclick="mover(2)"></div>
+      <div onclick="mover(3)"></div>
+      <div onclick="mover(4)"></div>
+      <div onclick="mover(5)"></div>
+      <div onclick="mover(6)"></div>
+      <div onclick="mover(7)"></div>
+      <div onclick="mover(8)"></div>
+    </div>
+    <div class="btn-container">
+      <button class="btn" onclick="reiniciar()">Reiniciar o jogo</button>
+      <button class="btn btn-danger" id="btnDesfazer" onclick="desfazer()">Desfazer a última jogada</button>
+    </div>
+  </div>
+
+  <script>
+    let jogadorAtual = "X";
+    let tabuleiroEstado = ["", "", "", "", "", "", "", "", ""];
+    let fimdejogo = false;
+    let historico = [];
+    let pontosX = 0;
+    let pontosO = 0;
+    let pontosEmpate = 0;
+
+    const men = document.getElementById("mensagem");
+    const tabuleiro = document.getElementById("tabuleiro");
+    const pntsX = document.getElementById("pontosX");
+    const pntsO = document.getElementById("pontosO");
+    const pntsemp = document.getElementById("pontosEmpate");
+    const btnDesfazer = document.getElementById("btnDesfazer");
+
+    function mover(index) {
+      if (tabuleiroEstado[index] !== "" || fimdejogo) return;
+
+      tabuleiroEstado[index] = jogadorAtual;
+      historico.push({ jogador: jogadorAtual, posicao: index });
+
+      const celula = tabuleiro.children[index];
+      celula.textContent = jogadorAtual;
+      celula.classList.add("move-animation");
+
+      limparClassesAnimacao();
+
+      if (checarVencedor()) {
+        men.textContent = `Jogador ${jogadorAtual} venceu!`;
+        men.classList.remove("empate");
+        men.classList.add("vencedor");
+        atualizarPlacar();
+        fimdejogo = true;
+        destacarVencedor();
+        btnDesfazer.disabled = true;  // Desativa o botão após vitória
+        return;
+      }
+
+      if (!tabuleiroEstado.includes("")) {
+        men.textContent = "Empate!";
+        men.classList.remove("vencedor");
+        men.classList.add("empate");
+        pontosEmpate++;
+        pntsemp.textContent = pontosEmpate;
+        fimdejogo = true;
+        destacarEmpate();
+        btnDesfazer.disabled = false;  // Pode continuar desfazendo em empate, se quiser
+        return;
+      }
+
+      jogadorAtual = jogadorAtual === "X" ? "O" : "X";
+      men.textContent = `É a vez do jogador ${jogadorAtual}`;
+      btnDesfazer.disabled = false; // Ativa o botão enquanto o jogo continua
+    }
+
+    function checarVencedor() {
+      const combinacoes = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6],
+      ];
+
+      return combinacoes.some(([a, b, c]) => {
+        return tabuleiroEstado[a] === jogadorAtual &&
+               tabuleiroEstado[b] === jogadorAtual &&
+               tabuleiroEstado[c] === jogadorAtual;
+      });
+    }
+
+        function destacarVencedor() {
+      const combinacoes = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6],
+      ];
+
+      for (const [a, b, c] of combinacoes) {
+        if (
+          tabuleiroEstado[a] === jogadorAtual &&
+          tabuleiroEstado[b] === jogadorAtual &&
+          tabuleiroEstado[c] === jogadorAtual
+        ) {
+          tabuleiro.children[a].classList.add("winning-line");
+          tabuleiro.children[b].classList.add("winning-line");
+          tabuleiro.children[c].classList.add("winning-line");
+          break;
+        }
+      }
+    }
+
+    function destacarEmpate() {
+      for (let i = 0; i < 9; i++) {
+        tabuleiro.children[i].classList.add("draw-animation");
+      }
+    }
+
+    function limparClassesAnimacao() {
+      for (let i = 0; i < 9; i++) {
+        tabuleiro.children[i].classList.remove("winning-line");
+        tabuleiro.children[i].classList.remove("draw-animation");
+      }
+      men.classList.remove("vencedor", "empate");
+    }
+
+    function atualizarPlacar() {
+      if (jogadorAtual === "X") {
+        pontosX++;
+        pntsX.textContent = pontosX;
+      } else {
+        pontosO++;
+        pntsO.textContent = pontosO;
+      }
+    }
+
+    function reiniciar() {
+      tabuleiroEstado.fill("");
+      historico = [];
+      jogadorAtual = "X";
+      fimdejogo = false;
+      men.textContent = "É a vez do jogador X";
+      limparClassesAnimacao();
+
+      for (let celula of tabuleiro.children) {
+        celula.textContent = "";
+      }
+      btnDesfazer.disabled = false;  // Habilita o botão novamente ao reiniciar
+    }
+
+    function desfazer() {
+      if (historico.length === 0 || fimdejogo) return;
+
+      limparClassesAnimacao();
+
+      const ultimaJogada = historico.pop();
+      tabuleiroEstado[ultimaJogada.posicao] = "";
+      tabuleiro.children[ultimaJogada.posicao].textContent = "";
+
+      jogadorAtual = ultimaJogada.jogador;
+      men.textContent = `É a vez do jogador ${jogadorAtual}`;
+      fimdejogo = false;
+      btnDesfazer.disabled = false;
+    }
+  </script>
+  <script>
+   if("serviceWorker" in navigator)  {
+    navigator.serviceWorker.register("service-worker.js").then(() => console.log("Service Worker registrado")).catch(err => console.log("Erro no SW:", err));
+   }
+  </script>
+</body>
+</html>
