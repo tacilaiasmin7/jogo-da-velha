@@ -1,286 +1,206 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Jogo da Velha</title>
-  <style>
-    /* Estilos básicos */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background: #f4f4f9;
-    }
-    .game-container {
-      text-align: center;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      padding: 20px;
-      width: 350px;
-    }
-    h1 {
-      margin-bottom: 20px;
-      font-size: 24px;
-    }
-    .scoreboard {
-      margin-bottom: 20px;
-      font-size: 18px;
-    }
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .board div {
-      width: 80px;
-      height: 80px;
-      background: #ecf0f1;
-      font-size: 36px;
-      font-weight: bold;
-      border: 2px solid #bdc3c7;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .board div:hover {
-      background-color: #dfe6e9;
-    }
-    .message {
-      margin-bottom: 20px;
-      font-size: 18px;
-      color: #2c3e50;
-    }
-    .btn {
-      padding: 10px 20px;
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin: 5px;
-    }
-    .btn:hover {
-      background: #2980b9;
-    }
-    .btn-danger {
-      background: #e74c3c;
-    }
-    .btn-danger:hover {
-      background: #c0392b;
-    }
-
-    /* Animações */
-    @keyframes fadeIn {
-      from {transform: scale(0); opacity: 0;}
-      to {transform: scale(1); opacity: 1;}
-    }
-    .move-animation {
-      animation: fadeIn 0.5s ease;
-    }
-    @keyframes pulse {
-      0%, 100% {background-color: rgba(46,204,113,0.7);}
-      50% {background-color: rgba(46,204,113,1);}
-    }
-    .winning-line {
-      animation: pulse 1s infinite;
-    }
-    @keyframes drawAnimation {
-      0%, 100% {background-color: #bdc3c7;}
-      50% {background-color: #ecf0f1;}
-    }
-    .draw-animation {
-      animation: drawAnimation 1.5s ease-in-out infinite;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da velha</title>
 </head>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+    background-color: #f9f9f9;
+  }
+
+  .container {
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    margin-bottom: 10px;
+  }
+
+  .placar {
+    margin-bottom: 15px;
+    font-weight: bold;
+  }
+
+  #mensagem {
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  #tabuleiro {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-template-rows: repeat(3, 80px);
+    gap: 5px;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+
+  #tabuleiro > div {
+    background-color: #fff;
+    border: 2px solid #333;
+    font-size: 36px;
+    font-weight: bold;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+
+  #tabuleiro > div:hover {
+    background-color: #e0e0e0;
+  }
+
+  button {
+    padding: 8px 16px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    border: 1px solid #333;
+    background-color: #fff;
+    transition: background-color 0.3s ease;
+  }
+
+  button:hover {
+    background-color: #ddd;
+  }
+</style>
 <body>
+ <div class="container">
+    <h1>Jogo da velha</h1>
+<div class="placar">
+Jogador X: <span id="pontosX">0</span>| Jogador O: <span id="pontosO">0</span>| Empates: <span id="pontosEmpate">0</span>
+</div>
+<div class="mensagem" id="mensagem">É a vez do jogador X</div>
+<div class="tabuleiro" id="tabuleiro">
+    <div onclick="mover(0)"></div>
+    <div onclick="mover(1)"></div>
+    <div onclick="mover(2)"></div>
+    <div onclick="mover(3)"></div>
+    <div onclick="mover(4)"></div>
+    <div onclick="mover(5)"></div>
+    <div onclick="mover(6)"></div>
+    <div onclick="mover(7)"></div>
+    <div onclick="mover(8)"></div>
+</div>
+    <button class="btn" onclick="reiniciar()">Reiniciar o jogo</button>
+    <button class="bto" onclick="desfazer()">Desfazer a última jogada</button>
+    
+<script>
+    let jogadorAtual="X";
+    let tabuleiroEstado=["","","","","","","","",""];
+    let fimdejogo= false;
+    let historico=[];
+    let pontosX= 0;
+    let pontosO= 0;
+    let pontosEmpate= 0;
+    const men= document.getElementById("mensagem");
+    const tab= document.getElementById("tabuleiro");
+    const pntsX= document.getElementById("pontosX");
+    const pntsO= document.getElementById("pontosO");
+    const pntsemp= document.getElementById("pontosEmpate");
+    const elementoTabuleiro = document.getElementById("tabuleiro");
 
-  <div class="game-container">
-    <h1>Jogo da Velha</h1>
 
-    <!-- Placar -->
-    <div class="scoreboard">
-      Jogador X: <span id="scoreX">0</span> | Jogador O: <span id="scoreO">0</span> | Empates: <span id="draws">0</span>
-    </div>
+    function mover(index) {
+        if(tabuleiroEstado[index] !== ""|| fimdejogo) return;
 
-    <!-- Mensagem do jogo -->
-    <div class="message" id="message">É a vez do jogador X</div>
+        tabuleiroEstado[index] = jogadorAtual;
+        historico.push({ jogador: jogadorAtual, posicao: index });
 
-    <!-- Tabuleiro -->
-    <div class="board" id="board">
-      <!-- 9 células, cada uma com um índice para a jogada -->
-      <div onclick="makeMove(0)"></div>
-      <div onclick="makeMove(1)"></div>
-      <div onclick="makeMove(2)"></div>
-      <div onclick="makeMove(3)"></div>
-      <div onclick="makeMove(4)"></div>
-      <div onclick="makeMove(5)"></div>
-      <div onclick="makeMove(6)"></div>
-      <div onclick="makeMove(7)"></div>
-      <div onclick="makeMove(8)"></div>
-    </div>
+        const celula = elementoTabuleiro.children[index];
+        celula.textContent = jogadorAtual;
+        celula.classList.add('move-animation');
+        
+        
+        if (checarVencedor()) {
+            men.textContent = `Jogador ${jogadorAtual} venceu!`;
+            atualizarPlacar ();
+            fimdejogo = true;
+            return;
 
-    <!-- Botões para reiniciar e desfazer -->
-    <button class="btn" onclick="restartGame()">Reiniciar Jogo</button>
-    <button class="btn btn-danger" onclick="undoMove()">Desfazer Última Jogada</button>
-  </div>
-
-  <script>
-    // Variáveis para controle do jogo
-    let currentPlayer = "X";             // Jogador atual
-    let gameBoard = ["", "", "", "", "", "", "", "", ""];  // Estado do tabuleiro
-    let gameOver = false;                // Estado do jogo
-    let moveHistory = [];                // Histórico de jogadas para desfazer
-
-    // Placar
-    let scoreX = 0;
-    let scoreO = 0;
-    let draws = 0;
-
-    // Elementos do DOM
-    const messageElement = document.getElementById("message");
-    const boardElement = document.getElementById("board");
-    const scoreXElement = document.getElementById("scoreX");
-    const scoreOElement = document.getElementById("scoreO");
-    const drawsElement = document.getElementById("draws");
-
-    // Função para jogar em uma posição
-    function makeMove(index) {
-      // Se célula ocupada ou jogo acabou, não faz nada
-      if (gameBoard[index] !== "" || gameOver) return;
-
-      // Marca a jogada
-      gameBoard[index] = currentPlayer;
-      moveHistory.push({ player: currentPlayer, index: index });
-
-      // Atualiza a célula no tabuleiro
-      const cell = boardElement.children[index];
-      cell.textContent = currentPlayer;
-      cell.classList.add('move-animation');
-
-      // Verifica se o jogador venceu
-      if (checkWinner()) {
-        messageElement.textContent = `Jogador ${currentPlayer} venceu!`;
-        highlightWinningLine();
-        updateScore();
-        gameOver = true;
-        return;
-      }
-
-      // Verifica empate
-      if (!gameBoard.includes("")) {
-        messageElement.textContent = "Empate!";
-        draws++;
-        drawsElement.textContent = draws;
-        applyDrawAnimation();
-        gameOver = true;
-        return;
-      }
-
-      // Troca jogador
-      currentPlayer = currentPlayer === "X" ? "O" : "X";
-      messageElement.textContent = `É a vez do jogador ${currentPlayer}`;
     }
+        if (!tabuleiroEstado.includes("")) {
+    men.textContent = "Empate!";
+    pontosEmpate++;
+    pntsemp.textContent = pontosEmpate;
+    fimdejogo = true;
+    return;
+}
 
-    // Função que verifica se alguém ganhou
-    function checkWinner() {
-      // Combinações vencedoras
-      const winPatterns = [
-        [0,1,2],[3,4,5],[6,7,8],  // linhas
-        [0,3,6],[1,4,7],[2,5,8],  // colunas
-        [0,4,8],[2,4,6]           // diagonais
-      ];
 
-      // Checa cada padrão se tem o mesmo símbolo
-      return winPatterns.some(pattern => {
-        const [a,b,c] = pattern;
-        return gameBoard[a] === currentPlayer &&
-               gameBoard[b] === currentPlayer &&
-               gameBoard[c] === currentPlayer;
-      });
-    }
+            jogadorAtual = jogadorAtual == "X" ? "O" : "X";
+            men.textContent = `È a vez do jogador ${jogadorAtual}`;
 
-    // Destaca a linha vencedora no tabuleiro
-    function highlightWinningLine() {
-      const winPatterns = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
-      ];
-
-      for (let pattern of winPatterns) {
-        const [a,b,c] = pattern;
-        if (gameBoard[a] === currentPlayer &&
-            gameBoard[b] === currentPlayer &&
-            gameBoard[c] === currentPlayer) {
-          boardElement.children[a].classList.add('winning-line');
-          boardElement.children[b].classList.add('winning-line');
-          boardElement.children[c].classList.add('winning-line');
-          break;
         }
-      }
+
+    
+
+    // função checar vencedor
+    function checarVencedor() {
+        const combinacoes = [
+            [0,1,2], [3,4,5], [6,7,8], // linhas //
+            [0,3,6], [1,4,7], [2,5,8], // colunas //
+            [0,4,8], [2,4,6]   // diagonais //
+    ];       
+        
+    // verifica se alguma das combinações é igual para o jagador atual
+    return combinacoes.some(([a,b,c])=> {
+        return (
+        tabuleiroEstado[a] === jogadorAtual &&
+                tabuleiroEstado[b] === jogadorAtual &&
+                tabuleiroEstado[c] === jogadorAtual
+            );
+            });
+    }
+    // função: reiniciar jogo //
+    function reiniciar() {
+     tabuleiroEstado.fill("") // limpa array //
+     historico = [];        // limpa historico //
+     jogadorAtual = "X"; // X começa sempre //
+     fimdejogo = false;
+     men.textContent = "É a vez do jogador X"
+     
+     
+     // limpa cada célula visualmente
+     for (let celula of elementoTabuleiro.children) {
+        celula.textContent = "";
+     }
+    }
+    
+    // função de desfazer jogada //
+    function desfazer(){
+        if (historico.length == 0 || fimdejogo) return; // se não dá pra fazer, sai //
+
+        const ultimajogada = historico.pop(); // remove última jogada //
+        tabuleiroEstado[ultimajogada.posicao] = ""; // limpa tabuleiro lógico //
+        elementoTabuleiro.children[ultimajogada.posicao].textContent=""; // limpa tela //
+
+        jogadorAtual = ultimajogada.jogador; // devolve a vez //
+        men.textContent = `É a vez do jogador ${jogadorAtual}`;
+        fimdejogo= false;
     }
 
-    // Aplica animação visual em caso de empate
-    function applyDrawAnimation() {
-      for (let cell of boardElement.children) {
-        cell.classList.add('draw-animation');
-      }
-      messageElement.style.color = "#e74c3c"; // mensagem em vermelho
+    // função atualiza placar
+function atualizarPlacar() {
+    if (jogadorAtual == "X"){
+        pontosX ++;
+        pntsX.textContent= pontosX;
     }
-
-    // Reinicia o jogo limpando tudo
-    function restartGame() {
-      gameBoard.fill("");
-      moveHistory = [];
-      currentPlayer = "X";
-      gameOver = false;
-
-      messageElement.textContent = "É a vez do jogador X";
-      messageElement.style.color = "#2c3e50";
-
-      for (let cell of boardElement.children) {
-        cell.textContent = "";
-        cell.classList.remove('winning-line', 'move-animation', 'draw-animation');
-      }
+    else {
+        pontosO ++;
+        pntsO.textContent = pontosO;
     }
-
-    // Desfaz a última jogada feita
-    function undoMove() {
-      if (moveHistory.length === 0 || gameOver) return;
-
-      const lastMove = moveHistory.pop();
-      gameBoard[lastMove.index] = "";
-      boardElement.children[lastMove.index].textContent = "";
-
-      currentPlayer = lastMove.player;
-      messageElement.textContent = `É a vez do jogador ${currentPlayer}`;
-      messageElement.style.color = "#2c3e50";
-      gameOver = false;
-    }
-
-    // Atualiza o placar de acordo com o vencedor
-    function updateScore() {
-      if (currentPlayer === "X") {
-        scoreX++;
-        scoreXElement.textContent = scoreX;
-      } else {
-        scoreO++;
-        scoreOElement.textContent = scoreO;
-      }
-    }
-  </script>
+}
+</script>
 </body>
 </html>
